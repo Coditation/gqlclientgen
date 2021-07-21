@@ -1,9 +1,10 @@
 package gen
 
 import (
-	"coditation.com/gqlclientgen/config"
-	"github.com/spf13/viper"
+	"gqlclientgen/config"
 	"os"
+
+	"github.com/spf13/viper"
 )
 
 const defaultPackageName = "gql"

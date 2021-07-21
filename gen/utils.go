@@ -1,8 +1,10 @@
 package gen
 
 import (
-	"coditation.com/gqlclientgen/config"
+	"gqlclientgen/config"
+
 	"github.com/spf13/viper"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func GetPackagePath() string {
@@ -21,4 +23,11 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func getTags(f *ast.FieldDefinition) string {
+	if f.Type.NonNull {
+		return f.Name + ",omitempty"
+	}
+	return f.Name
 }

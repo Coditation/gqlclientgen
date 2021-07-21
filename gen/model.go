@@ -1,9 +1,11 @@
 package gen
 
 import (
+	"os"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/vektah/gqlparser/v2/ast"
-	"os"
 )
 
 type typeMapping struct {
@@ -12,9 +14,6 @@ type typeMapping struct {
 }
 
 const (
-	scalarKind           = "SCALAR"
-	objectKind           = "OBJECT"
-	inputObjectKind      = "INPUT_OBJECT"
 	gqlClientPackageName = "github.com/hasura/go-graphql-client"
 )
 
@@ -45,12 +44,12 @@ func build(parsedGql *ast.Schema, context *Context) error {
 		if def.BuiltIn != true {
 			kind := def.Kind
 			switch kind {
-			case scalarKind:
+			case ast.Scalar:
 				err := createScalar(def, context)
 				if err != nil {
 					panic("error in creating the scalar")
 				}
-			case objectKind:
+			case ast.Object, ast.InputObject:
 				err := createObject(def, context)
 				if err != nil {
 					panic("error in creating the object")
@@ -62,7 +61,11 @@ func build(parsedGql *ast.Schema, context *Context) error {
 }
 
 func createScalar(def *ast.Definition, context *Context) error {
-
+	context.Model.Scalars = append(context.Model.Scalars, &DataTypeInfo{
+		GraphqlName: def.Name,
+		MappedName:  strings.ToLower(def.Name),
+		MappedType:  strings.ToLower(string(def.Kind)),
+	})
 	return nil
 }
 
@@ -70,18 +73,31 @@ func createObject(def *ast.Definition, context *Context) error {
 	if StringInSlice(def.Name, typeIgnoreList) == true {
 		return nil
 	}
-	//var fields []*jen.Statement
-	//for _, fd := range def.Fields {
-	//	fd.Type.
-	//
-	//}
-	//c := jen.Type().Id(strings.Title(strings.ToLower(def.Name))).Struct(
-	//
-	//	)
+	obj := &DataTypeInfo{}
+	objStruct := jen.Type().Id(def.Name)
+	for _, field := range def.Fields {
+		objStruct.Struct().Append(jen.Id(strings.Title(field.Name)).Tag(map[string]string{"json": getTags(field)}))
+	}
+	obj.GraphqlName = def.Name
+	obj.MappedName = strings.ToLower(def.Name)
+	obj.MappedType = strings.ToLower(string(def.Kind))
+	obj.CodeStatement = objStruct
+	context.Model.Objects = append(context.Model.Objects, obj)
 	return nil
 }
 
-func createQuery(parsedGql []*ast.Source, file *os.File) error {
+func createQuery(def *ast.Definition, context *Context) error {
+
+	return nil
+}
+
+func createMutation(def *ast.Definition, context *Context) error {
+	return nil
+}
+
+func createEnum(def *ast.Definition, context *Context) error {
+	// obj := &DataTypeInfo{}
+
 	return nil
 }
 
