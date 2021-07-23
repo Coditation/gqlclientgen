@@ -2,7 +2,7 @@ package main
 
 import (
 	config "gqlclientgen/config"
-	"gqlclientgen/gen"
+	"gqlclientgen/gen/modelgen"
 	"gqlclientgen/schema"
 
 	"github.com/Coditation/skael-connectors-shared/logger"
@@ -25,5 +25,5 @@ func main() {
 	if err != nil {
 		logger.LogError(err)
 	}
-	gen.GenerateModel(source)
+	modelgen.GenerateModel(source)
 }
