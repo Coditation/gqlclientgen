@@ -2,6 +2,8 @@ package codegen
 
 import (
 	"bytes"
+	"github.com/spf13/viper"
+	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
 	"os"
@@ -21,7 +23,7 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 	buildClientCode(context)
 	buildMutation(parsedGql, context)
 	buildQuery(parsedGql, context)
-	jenFile := jen.NewFile("client")
+	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	jenFile.ImportAlias(utils.GqlClientPackageName, "graphql")
 	for _, v := range context.Client.Client {
 		jenFile.Add(v.CodeStatement)

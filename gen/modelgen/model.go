@@ -2,6 +2,8 @@ package modelgen
 
 import (
 	"bytes"
+	"github.com/spf13/viper"
+	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
 
@@ -21,7 +23,7 @@ func GenerateModel(parsedGql *ast.Schema) error {
 	}
 	defer f.Close()
 	build(parsedGql, context)
-	jenFile := jen.NewFile("model")
+	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	for _, v := range context.Model.Objects {
 		jenFile.Add(v.CodeStatement)
 	}
@@ -135,7 +137,7 @@ func createEnum(def *ast.Definition, c *context.Context) error {
 }
 
 func createFiles() (*os.File, error) {
-	p := path.Join(utils.GetFilePath(), "model", "models.go")
+	p := path.Join(utils.GetFilePath(), "model.go")
 	if err := os.MkdirAll(path.Dir(p), os.ModePerm); err != nil {
 		return nil, err
 	}

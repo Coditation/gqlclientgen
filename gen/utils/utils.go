@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"gqlclientgen/config"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -40,7 +39,6 @@ const (
 )
 
 func GetPackagePath() string {
-	gopath := os.Getenv("GOPATH")
 	v := viper.GetViper()
 	packageName := v.GetString(config.PackageNameKey)
 	if packageName == "" {
@@ -51,12 +49,12 @@ func GetPackagePath() string {
 		logger.LogError(err)
 		return ""
 	}
-
-	outDir, err = filepath.Rel(path.Join(gopath, "src"), outDir)
-	if err != nil {
-		logger.LogError(err)
-		return ""
-	}
+	//
+	//outDir, err = filepath.Rel(path.Join(gopath, "src"), outDir)
+	//if err != nil {
+	//	logger.LogError(err)
+	//	return ""
+	//}
 	return path.Join(outDir, packageName)
 }
 
@@ -119,7 +117,7 @@ func GetClientParams() *jen.Statement {
 }
 
 func getModelPath() string {
-	return path.Join(GetPackagePath(), "model")
+	return ""
 }
 
 func GetArgsType(arg *ast.ArgumentDefinition) *jen.Statement {
