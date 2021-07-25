@@ -1,11 +1,5 @@
 package config
 
-import (
-	"fmt"
-
-	"github.com/spf13/viper"
-)
-
 const (
 	ConfigName              = "config"
 	ConfigType              = "yaml"
@@ -25,16 +19,4 @@ type GqlClientGenConfig struct {
 	SourceType           string
 	GraphQLServerBaseUrl string
 	SourceFilePath       string
-}
-
-func LoadConfig(configFile string) error {
-	v := viper.GetViper()
-	v.SetConfigName(ConfigName)
-	v.SetConfigType(ConfigType)
-	v.AddConfigPath(configFile)
-	err := v.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %w \n", err))
-	}
-	return nil
 }

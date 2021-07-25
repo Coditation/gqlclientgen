@@ -3,9 +3,12 @@ package utils
 import (
 	"bytes"
 	"gqlclientgen/config"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
+	"github.com/Coditation/skael-connectors-shared/logger"
 	"github.com/dave/jennifer/jen"
 	"github.com/spf13/viper"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -37,12 +40,30 @@ const (
 )
 
 func GetPackagePath() string {
+	gopath := os.Getenv("GOPATH")
 	v := viper.GetViper()
 	packageName := v.GetString(config.PackageNameKey)
 	if packageName == "" {
 		packageName = DefaultPackageName
 	}
-	return v.GetString(config.OutputDirectoryKey) + "/" + packageName
+	outDir, err := filepath.Abs(v.GetString(config.OutputDirectoryKey))
+	if err != nil {
+		logger.LogError(err)
+		return ""
+	}
+
+	outDir, err = filepath.Rel(path.Join(gopath, "src"), outDir)
+	if err != nil {
+		logger.LogError(err)
+		return ""
+	}
+	// currDir, _ := os.Getwd()
+	// outDir, err = filepath.Rel(currDir, outDir)
+	// if err != nil {
+	// 	logger.LogError(err)
+	// 	return ""
+	// }
+	return path.Join(outDir, packageName)
 }
 
 func StringInSlice(a string, list []string) bool {
@@ -86,7 +107,7 @@ func GetEnumParam(s, str string, t bool) *jen.Statement {
 }
 
 func GetClientParams() *jen.Statement {
-	return GetMethodParams("c", "Client")
+	return GetMethodParams("c", "client")
 }
 
 func getModelPath() string {
@@ -127,7 +148,6 @@ func GetReturnType(field *ast.FieldDefinition) *jen.Statement {
 
 func GetRequestType(field *ast.FieldDefinition) *jen.Statement {
 	fieldName := ToCamelCase(strings.ToLower(field.Type.NamedType))
-
 	if fieldName == "" {
 		fieldName = ToCamelCase(field.Type.Elem.Name())
 		return jen.Index().Qual(getModelPath(), ToCamelCase(fieldName))
@@ -150,21 +170,16 @@ func GetRequestTags(operation string, arr []string) map[string]string {
 		v = append(v, k+": &"+k)
 		tag = "(" + strings.Join(v, ",") + ")"
 	}
-	m["json"] = tag
 	m["graphql"] = tag
 	return m
 }
 
 func ToSmallCamelCase(s string) string {
-
 	if len(s) < 2 {
 		return strings.ToLower(s)
 	}
-
 	bts := []byte(s)
-
 	lc := bytes.ToLower([]byte{bts[0]})
 	rest := bts[1:]
-
 	return string(bytes.Join([][]byte{lc, rest}, nil))
 }

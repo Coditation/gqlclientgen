@@ -2,7 +2,8 @@ package schema
 
 import (
 	"gqlclientgen/config"
-	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 	"github.com/vektah/gqlparser/v2"
@@ -13,8 +14,9 @@ type SdlFileLoader struct{}
 
 func (s SdlFileLoader) Load() (*ast.Schema, error) {
 	v := viper.GetViper()
-	sfp := v.GetString(config.SourceFilePathKey)
-	b, err := ioutil.ReadFile(sfp)
+	sfp, _ := filepath.Abs(v.GetString(config.SourceFilePathKey))
+
+	b, err := os.ReadFile(sfp)
 	if err != nil {
 		return nil, err
 	}

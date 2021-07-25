@@ -1,6 +1,7 @@
 package modelgen
 
 import (
+	"bytes"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
 
@@ -19,11 +20,29 @@ func GenerateModel(parsedGql *ast.Schema) error {
 		return err
 	}
 	defer f.Close()
-	Build(parsedGql, context)
+	build(parsedGql, context)
+	jenFile := jen.NewFile("model")
+	for _, v := range context.Model.Objects {
+		jenFile.Add(v.CodeStatement)
+	}
+	for _, v := range context.Model.Enums {
+		jenFile.Add(v.CodeStatement)
+	}
+	for _, v := range context.Model.Scalars {
+		jenFile.Add(v.CodeStatement)
+	}
+	buf := &bytes.Buffer{}
+	err = jenFile.Render(buf)
+	if err != nil {
+		return err
+	}
+	if writeErr := os.WriteFile(f.Name(), buf.Bytes(), os.ModePerm); writeErr != nil {
+		return writeErr
+	}
 	return nil
 }
 
-func Build(parsedGql *ast.Schema, c *context.Context) error {
+func build(parsedGql *ast.Schema, c *context.Context) error {
 	for _, def := range parsedGql.Types {
 		if def.BuiltIn != true {
 			kind := def.Kind
@@ -116,16 +135,15 @@ func createEnum(def *ast.Definition, c *context.Context) error {
 }
 
 func createFiles() (*os.File, error) {
-	p := utils.GetPackagePath() + "/model/models.go"
+	p := path.Join(utils.GetPackagePath(), "model", "models.go")
 	if err := os.MkdirAll(path.Dir(p), os.ModePerm); err != nil {
 		return nil, err
 	}
 	f, err := os.Create(p)
 	if err != nil {
 		return nil, err
-	} else {
-		return f, nil
 	}
+	return f, nil
 }
 
 func getType(field *ast.FieldDefinition) *jen.Statement {

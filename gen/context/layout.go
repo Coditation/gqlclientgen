@@ -4,6 +4,7 @@ import (
 	"gqlclientgen/config"
 	"gqlclientgen/gen/utils"
 	"os"
+	"path"
 
 	"github.com/spf13/viper"
 )
@@ -14,7 +15,7 @@ func GenerateLayout() error {
 	if packageName == "" {
 		packageName = utils.DefaultPackageName
 	}
-	err := os.MkdirAll(v.GetString(config.OutputDirectoryKey)+"/"+packageName, os.ModePerm)
+	err := os.MkdirAll(path.Join(v.GetString(config.OutputDirectoryKey), packageName), os.ModePerm)
 	if err != nil {
 		return err
 	}

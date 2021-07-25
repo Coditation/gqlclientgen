@@ -9,7 +9,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-func BuildMutation(def *ast.Schema, c *context.Context) error {
+func buildMutation(def *ast.Schema, c *context.Context) error {
 	mutation := def.Mutation
 	for _, mutate := range mutation.Fields {
 		if mutate.Position != nil {
@@ -43,27 +43,46 @@ func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 	}
 	qFunc.Parens(muArgs)
 	qFunc.Parens(jen.List(jen.Add(utils.GetReturnType(d)), jen.Error()))
+	returnType.Var().Id("mutate")
 	if strings.ToLower(d.Type.Name()) != "any" {
-		returnType.Id(d.Type.Name()).Add(utils.GetRequestType(d))
+		returnType.Struct(
+			jen.Id(utils.ToCamelCase(d.Name)).Struct(
+				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)),
+			).Tag(utils.GetRequestTags(utils.ToSmallCamelCase(d.Name), tags)),
+		)
 	} else {
-		returnType.Id(d.Type.Name()).Interface()
+		returnType.Struct(
+			jen.Id(utils.ToCamelCase(d.Name)).Interface().Tag(utils.GetRequestTags(utils.ToSmallCamelCase(d.Name), tags)),
+		)
 	}
 	variables := jen.Id("variables").Op(":=").Map(jen.String()).Interface()
-
 	qFunc.Block(
-		jen.Var().Id("mutate").Struct(
-			jen.Id(utils.ToCamelCase(d.Name)).Struct(
-				returnType,
-			).Tag(utils.GetRequestTags(utils.ToSmallCamelCase(d.Name), tags)),
-		),
+		returnType,
 		variables.Values(varDict).Line(),
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot("QueryRaw").Params(jen.List(jen.Id("ctx"), jen.Id("&mutate"), jen.Id("variables"))),
 		jen.If(
-			jen.Err().Op(":=").Id("c").Dot("Client").Dot("Mutate").Params(jen.List(jen.Id("ctx"), jen.Id("&mutate"), jen.Id("variables"))),
 			jen.Err().Op("!=").Nil(),
 		).Block(
 			jen.Return(jen.Nil(), jen.Err()),
 		),
-		jen.Return(jen.Op("&").Id("mutate").Dot(utils.ToCamelCase(d.Name)), jen.Nil()),
+		jen.Var().Id("res").Add(utils.GetReturnType(d)),
+		jen.If(
+			jen.Id("resp").Op("!=").Nil(),
+		).Block(
+			jen.List(jen.Id("byteData"), jen.Err()).Op(":=").Id("resp").Dot("MarshalJSON").Call(),
+			jen.If(
+				jen.Err().Op("!=").Nil(),
+			).Block(
+				jen.Return(jen.Nil(), jen.Err()),
+			),
+			jen.If(
+				jen.Id("unMarshalErr").Op(":=").Qual("encoding/json", "Unmarshal").Params(jen.Id("byteData"), jen.Op("&").Id("res")),
+				jen.Id("unMarshalErr").Op("!=").Nil(),
+			).Block(
+				jen.Return(jen.Nil(), jen.Id("unMarshalErr")),
+			),
+		),
+		jen.Return(jen.Op("&").Id("res"), jen.Nil()),
 	).Line()
 
 	return qFunc.Line()
