@@ -44,7 +44,7 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 }
 
 func createFiles() (*os.File, error) {
-	p := path.Join(utils.GetPackagePath(), "client.go")
+	p := path.Join(utils.GetFilePath(), "client.go")
 	if err := os.MkdirAll(path.Dir(p), os.ModePerm); err != nil {
 		return nil, err
 	}

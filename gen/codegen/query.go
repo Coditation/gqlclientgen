@@ -34,25 +34,25 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 		tags       []string
 		returnType = &jen.Statement{}
 	)
-	qFunc := jen.Func().Params(utils.GetClientParams()).Id(utils.ToCamelCase(d.Name))
+	qFunc := jen.Func().Params(utils.GetClientParams()).Id(utils.ToPascalCase(d.Name))
 	queryArgs.Add(jen.Add(jen.Id("ctx"), jen.Qual("context", "Context")).Op(","))
 	for _, arg := range d.Arguments {
-		queryArgs.Add(jen.Id(utils.ToSmallCamelCase(arg.Name)).Add(utils.GetArgsType(arg)).Op(","))
-		varDict[jen.Lit(arg.Name)] = jen.Id(utils.ToSmallCamelCase(arg.Name))
-		tags = append(tags, utils.ToSmallCamelCase(arg.Name))
+		queryArgs.Add(jen.Id(utils.ToSmallPascalCase(arg.Name)).Add(utils.GetArgsType(arg)).Op(","))
+		varDict[jen.Lit(arg.Name)] = jen.Id(utils.ToSmallPascalCase(arg.Name))
+		tags = append(tags, utils.ToSmallPascalCase(arg.Name))
 	}
 	qFunc.Parens(queryArgs)
 	qFunc.Parens(jen.List(jen.Add(utils.GetReturnType(d)), jen.Error()))
 	returnType.Var().Id("query")
 	if strings.ToLower(d.Type.Name()) != "any" {
 		returnType.Struct(
-			jen.Id(utils.ToCamelCase(d.Name)).Struct(
+			jen.Id(utils.ToPascalCase(d.Name)).Struct(
 				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)),
-			).Tag(utils.GetRequestTags(utils.ToSmallCamelCase(d.Name), tags)),
+			).Tag(utils.GetRequestTags(utils.ToSmallPascalCase(d.Name), tags)),
 		)
 	} else {
 		returnType.Struct(
-			jen.Id(utils.ToCamelCase(d.Name)).Interface().Tag(utils.GetRequestTags(utils.ToSmallCamelCase(d.Name), tags)),
+			jen.Id(utils.ToPascalCase(d.Name)).Interface().Tag(utils.GetRequestTags(utils.ToSmallPascalCase(d.Name), tags)),
 		)
 	}
 	variables := jen.Id("variables").Op(":=").Map(jen.String()).Interface()
@@ -65,7 +65,7 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 		).Block(
 			jen.Return(jen.Nil(), jen.Err()),
 		),
-		jen.Var().Id("res").Add(utils.GetReturnType(d)),
+		jen.Var().Id("res").Add(utils.GetVarType(d)),
 		jen.If(
 			jen.Id("resp").Op("!=").Nil(),
 		).Block(
@@ -82,7 +82,7 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 				jen.Return(jen.Nil(), jen.Id("unMarshalErr")),
 			),
 		),
-		jen.Return(jen.Op("&").Id("res"), jen.Nil()),
+		jen.Return(jen.Add(utils.GetReturnFuncType(d)), jen.Nil()),
 	).Line()
 
 	return qFunc.Line()

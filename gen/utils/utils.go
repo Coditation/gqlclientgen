@@ -57,12 +57,20 @@ func GetPackagePath() string {
 		logger.LogError(err)
 		return ""
 	}
-	// currDir, _ := os.Getwd()
-	// outDir, err = filepath.Rel(currDir, outDir)
-	// if err != nil {
-	// 	logger.LogError(err)
-	// 	return ""
-	// }
+	return path.Join(outDir, packageName)
+}
+
+func GetFilePath() string {
+	v := viper.GetViper()
+	packageName := v.GetString(config.PackageNameKey)
+	if packageName == "" {
+		packageName = DefaultPackageName
+	}
+	outDir, err := filepath.Abs(v.GetString(config.OutputDirectoryKey))
+	if err != nil {
+		logger.LogError(err)
+		return ""
+	}
 	return path.Join(outDir, packageName)
 }
 
@@ -85,7 +93,7 @@ func GetTags(f *ast.FieldDefinition) string {
 	return f.Name
 }
 
-func ToCamelCase(s string) string {
+func ToPascalCase(s string) string {
 	var g []string
 	p := strings.Fields(s)
 	for _, value := range p {
@@ -95,7 +103,7 @@ func ToCamelCase(s string) string {
 }
 
 func GetMethodParams(s, str string) *jen.Statement {
-	return jen.Id(s).Op("*").Id(ToCamelCase(str))
+	return jen.Id(s).Op("*").Id(ToPascalCase(str))
 }
 
 func GetEnumParam(s, str string, t bool) *jen.Statement {
@@ -103,7 +111,7 @@ func GetEnumParam(s, str string, t bool) *jen.Statement {
 	if t {
 		e.Op("*")
 	}
-	return e.Id(ToCamelCase(str))
+	return e.Id(ToPascalCase(str))
 }
 
 func GetClientParams() *jen.Statement {
@@ -115,49 +123,74 @@ func getModelPath() string {
 }
 
 func GetArgsType(arg *ast.ArgumentDefinition) *jen.Statement {
-	fieldName := ToCamelCase(strings.ToLower(arg.Type.NamedType))
+	fieldName := ToPascalCase(arg.Type.NamedType)
 	if fieldName == "" {
-		fieldName = ToCamelCase(arg.Type.Elem.Name())
-		return jen.Index().Op("*").Qual(getModelPath(), ToCamelCase(fieldName))
+		fieldName = ToPascalCase(arg.Type.Elem.Name())
+		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[fieldName]
+	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
 	if !ok {
 		if arg.Type.NonNull {
-			return jen.Qual(getModelPath(), ToCamelCase(arg.Type.Name()))
+			return jen.Qual(getModelPath(), ToPascalCase(arg.Type.Name()))
 		}
-		return jen.Qual(getModelPath(), ToCamelCase(arg.Type.Name()))
+		return jen.Qual(getModelPath(), ToPascalCase(arg.Type.Name()))
 	}
 	return fieldType.MappedType
 }
 
 func GetReturnType(field *ast.FieldDefinition) *jen.Statement {
-	fieldName := ToCamelCase(strings.ToLower(field.Type.NamedType))
+	fieldName := ToPascalCase(field.Type.NamedType)
 	if fieldName == "" {
-		fieldName = ToCamelCase(field.Type.Elem.Name())
-		return jen.Index().Op("*").Qual(getModelPath(), ToCamelCase(fieldName))
+		fieldName = ToPascalCase(field.Type.Elem.Name())
+		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[fieldName]
+	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
 	if !ok {
 		if field.Type.NonNull {
-			return jen.Op("*").Qual(getModelPath(), ToCamelCase(fieldName))
+			return jen.Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 		}
-		return jen.Op("*").Qual(getModelPath(), ToCamelCase(fieldName))
+		return jen.Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
 	return fieldType.MappedType
 }
 
-func GetRequestType(field *ast.FieldDefinition) *jen.Statement {
-	fieldName := ToCamelCase(strings.ToLower(field.Type.NamedType))
+func GetVarType(field *ast.FieldDefinition) *jen.Statement {
+	fieldName := ToPascalCase(field.Type.NamedType)
 	if fieldName == "" {
-		fieldName = ToCamelCase(field.Type.Elem.Name())
-		return jen.Index().Qual(getModelPath(), ToCamelCase(fieldName))
+		fieldName = ToPascalCase(field.Type.Elem.Name())
+		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[fieldName]
+	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
 	if !ok {
 		if field.Type.NonNull {
-			return jen.Qual(getModelPath(), ToCamelCase(fieldName))
+			return jen.Qual(getModelPath(), ToPascalCase(fieldName))
 		}
-		return jen.Qual(getModelPath(), ToCamelCase(fieldName))
+		return jen.Qual(getModelPath(), ToPascalCase(fieldName))
+	}
+	return fieldType.MappedType
+}
+
+func GetReturnFuncType(field *ast.FieldDefinition) *jen.Statement {
+	fieldName := ToPascalCase(field.Type.NamedType)
+	if fieldName == "" {
+
+		return jen.Id("res")
+	}
+	return jen.Op("&").Id("res")
+}
+
+func GetRequestType(field *ast.FieldDefinition) *jen.Statement {
+	fieldName := ToPascalCase(field.Type.NamedType)
+	if fieldName == "" {
+		fieldName = ToPascalCase(field.Type.Elem.Name())
+		return jen.Index().Qual(getModelPath(), ToPascalCase(fieldName))
+	}
+	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
+	if !ok {
+		if field.Type.NonNull {
+			return jen.Qual(getModelPath(), ToPascalCase(fieldName))
+		}
+		return jen.Qual(getModelPath(), ToPascalCase(fieldName))
 	}
 	return fieldType.MappedType
 }
@@ -174,7 +207,7 @@ func GetRequestTags(operation string, arr []string) map[string]string {
 	return m
 }
 
-func ToSmallCamelCase(s string) string {
+func ToSmallPascalCase(s string) string {
 	if len(s) < 2 {
 		return strings.ToLower(s)
 	}

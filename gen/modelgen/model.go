@@ -88,9 +88,9 @@ func createObject(def *ast.Definition, c *context.Context) error {
 		obj       = &context.DataTypeInfo{}
 		fieldType = &jen.Statement{}
 	)
-	objStruct := jen.Type().Id(utils.ToCamelCase(def.Name))
+	objStruct := jen.Type().Id(utils.ToPascalCase(def.Name))
 	for _, field := range def.Fields {
-		fieldType.Id(utils.ToCamelCase(field.Name))
+		fieldType.Id(utils.ToPascalCase(field.Name))
 		fieldType.Add(getType(field))
 		fieldType.Tag(map[string]string{"json": utils.GetTags(field)}).Line()
 	}
@@ -113,19 +113,19 @@ func createEnum(def *ast.Definition, c *context.Context) error {
 		enumConstValues = &jen.Statement{}
 		enumValues      []string
 	)
-	enumType := jen.Type().Id(utils.ToCamelCase(def.Name)).String().Line()
+	enumType := jen.Type().Id(utils.ToPascalCase(def.Name)).String().Line()
 	enumConst := jen.Const()
 	for _, enum := range def.EnumValues {
-		enumName := utils.ToCamelCase(def.Name + utils.ToCamelCase(strings.ToLower(enum.Name)))
+		enumName := utils.ToPascalCase(def.Name + utils.ToPascalCase(strings.ToLower(enum.Name)))
 		enumValues = append(enumValues, enumName)
-		enumConstValues.Add(jen.Id(enumName).Id(utils.ToCamelCase(def.Name)).Op("=").Lit(enum.Name)).Line()
+		enumConstValues.Add(jen.Id(enumName).Id(utils.ToPascalCase(def.Name)).Op("=").Lit(enum.Name)).Line()
 		enumArrayValues.List(jen.Id(enumName).Op(","))
 	}
 	enumConst.Defs(enumConstValues).Line()
 	enumType.Add(enumConst)
-	enumArray := jen.Var().Id(utils.ToCamelCase("All" + def.Name)).Op("=").Index().Id(utils.ToCamelCase(def.Name)).Values(enumArrayValues).Line()
+	enumArray := jen.Var().Id(utils.ToPascalCase("All" + def.Name)).Op("=").Index().Id(utils.ToPascalCase(def.Name)).Values(enumArrayValues).Line()
 	enumType.Add(enumArray).Line()
-	enumType.Add(getEnumMethods(utils.ToCamelCase(def.Name), enumValues)).Line()
+	enumType.Add(getEnumMethods(utils.ToPascalCase(def.Name), enumValues)).Line()
 	obj.GraphqlName = def.Name
 	obj.MappedName = strings.ToLower(def.Name)
 	obj.MappedType = strings.ToLower(string(def.Kind))
@@ -135,7 +135,7 @@ func createEnum(def *ast.Definition, c *context.Context) error {
 }
 
 func createFiles() (*os.File, error) {
-	p := path.Join(utils.GetPackagePath(), "model", "models.go")
+	p := path.Join(utils.GetFilePath(), "model", "models.go")
 	if err := os.MkdirAll(path.Dir(p), os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -147,17 +147,17 @@ func createFiles() (*os.File, error) {
 }
 
 func getType(field *ast.FieldDefinition) *jen.Statement {
-	fieldName := utils.ToCamelCase(strings.ToLower(field.Type.NamedType))
+	fieldName := utils.ToPascalCase(strings.ToLower(field.Type.NamedType))
 	if fieldName == "" {
-		fieldName = utils.ToCamelCase(field.Type.Elem.Name())
+		fieldName = utils.ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Op("*").Id(fieldName)
 	}
 	fieldType, ok := utils.TypeMappings[fieldName]
 	if !ok {
 		if field.Type.NonNull {
-			return jen.Op("*").Id(utils.ToCamelCase(field.Type.Name()))
+			return jen.Op("*").Id(utils.ToPascalCase(field.Type.Name()))
 		}
-		return jen.Id(utils.ToCamelCase(field.Type.Name()))
+		return jen.Id(utils.ToPascalCase(field.Type.Name()))
 	}
 	return fieldType.MappedType
 }
