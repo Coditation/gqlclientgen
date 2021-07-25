@@ -1,27 +1,31 @@
 package schema
 
 import (
-	"coditation.com/gqlclientgen/config"
-	"fmt"
+	"gqlclientgen/config"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/viper"
+	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
-	"io/ioutil"
 )
 
-type SdlFileLoader struct {
-}
+type SdlFileLoader struct{}
 
-func (s SdlFileLoader) Load() ([]*ast.Source, error) {
+func (s SdlFileLoader) Load() (*ast.Schema, error) {
 	v := viper.GetViper()
-	sfp := v.GetString(config.SourceFilePathKey)
-	b, err := ioutil.ReadFile(sfp)
+	sfp, _ := filepath.Abs(v.GetString(config.SourceFilePathKey))
+
+	b, err := os.ReadFile(sfp)
 	if err != nil {
-		fmt.Print(err)
 		return nil, err
 	}
-	str := string(b) // convert content to a 'string'
 	var sources = []*ast.Source{
-		{Name: "default", Input: str},
+		{Name: "default", Input: string(b)},
 	}
-	return sources, nil
+	schema, loadErr := gqlparser.LoadSchema(sources...)
+	if loadErr != nil {
+		return nil, err
+	}
+	return schema, nil
 }

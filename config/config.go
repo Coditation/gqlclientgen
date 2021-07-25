@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -14,7 +15,8 @@ const (
 	GraphqlServerBaseUrlKey = "graphqlServerBaseUrl"
 	SourceFilePathKey       = "sourceFilePath"
 	FileSourceType          = "file"
-	UrlSourceType           = "url"
+	UrlSourceType           = "remote"
+	RemoteURL               = "url"
 )
 
 type GqlClientGenConfig struct {
@@ -35,6 +37,4 @@ func LoadConfig(configFile string) error {
 		panic(fmt.Errorf("Fatal error config file: %w \n", err))
 	}
 	return nil
-	//v.AutomaticEnv()
-	//c.Server.Url = v.GetString("CONNECTOR_URL")
 }
