@@ -1,3 +1,5 @@
+<a href="https://www.coditation.com"><img src="https://www.coditation.com/wp-content/uploads/2020/08/Small-Logo@4x-2.png" align="left" height="20" width="124" ></a></br>
+
 # GraphQL Client/SDK Generator for Golang
 
 A Golang client side code/SDK generator for consuming the GraphQL APIs.
