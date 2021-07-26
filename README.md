@@ -14,7 +14,7 @@ go build gqlclientgen
 gqlclientgen -config_path=<path of the directory containing the config.yaml>
 ```
 
-### Run
+### Config (YAML)
 ```yaml
 # Name of the package for generated client/SDK
 packageName: "gql"
