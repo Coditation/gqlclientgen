@@ -9,4 +9,5 @@ require (
 	github.com/hasura/go-graphql-client v0.2.0
 	github.com/spf13/viper v1.8.1
 	github.com/vektah/gqlparser/v2 v2.2.0
+	gopkg.in/yaml.v2 v2.4.0
 )

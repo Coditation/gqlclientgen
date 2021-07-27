@@ -1,5 +1,0 @@
-packageName: "gql"
-outputDirectory: "/home/sahilp/WorkSpace/Go/src/gqlclientgen/op"
-sourceType: "file"
-sourceFilePath: "/home/sahilp/WorkSpace/Go/src/gqlclientgen/schema/schema_test/schema/schema.graphqls"
-graphqlServerBaseUrl: "http://localhost:8080/"

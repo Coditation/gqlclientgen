@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"gqlclientgen/config"
+
 	"path"
 	"path/filepath"
 	"strings"
@@ -20,16 +21,16 @@ type TypeMapping struct {
 var (
 	TypeIgnoreList []string = []string{"Query", "Subscription", "Mutation"}
 	TypeMappings            = map[string]TypeMapping{
-		"String":   {MappedType: jen.String()},
-		"Id":       {MappedType: jen.String()},
-		"Int":      {MappedType: jen.Int()},
-		"Float":    {MappedType: jen.Float64()},
-		"Boolean":  {MappedType: jen.Bool()},
-		"Any":      {MappedType: jen.Interface()},
-		"Map":      {MappedType: jen.Map(jen.String()).Interface()},
-		"Date":     {MappedType: jen.Qual("time", "Time")},
-		"Time":     {MappedType: jen.Qual("time", "Time")},
-		"DateTime": {MappedType: jen.Qual("time", "Time")},
+		"string":   {MappedType: jen.String()},
+		"id":       {MappedType: jen.String()},
+		"int":      {MappedType: jen.Int()},
+		"float":    {MappedType: jen.Float64()},
+		"boolean":  {MappedType: jen.Bool()},
+		"any":      {MappedType: jen.Interface()},
+		"map":      {MappedType: jen.Map(jen.String()).Interface()},
+		"date":     {MappedType: jen.Struct(jen.Qual("time", "Time"))},
+		"time":     {MappedType: jen.Struct(jen.Qual("time", "Time"))},
+		"datetime": {MappedType: jen.Struct(jen.Qual("time", "Time"))},
 	}
 )
 
@@ -126,7 +127,7 @@ func GetArgsType(arg *ast.ArgumentDefinition) *jen.Statement {
 		fieldName = ToPascalCase(arg.Type.Elem.Name())
 		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
+	fieldType, ok := TypeMappings[strings.ToLower(fieldName)]
 	if !ok {
 		if arg.Type.NonNull {
 			return jen.Qual(getModelPath(), ToPascalCase(arg.Type.Name()))
@@ -142,7 +143,7 @@ func GetReturnType(field *ast.FieldDefinition) *jen.Statement {
 		fieldName = ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
+	fieldType, ok := TypeMappings[strings.ToLower(fieldName)]
 	if !ok {
 		if field.Type.NonNull {
 			return jen.Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
@@ -158,7 +159,7 @@ func GetVarType(field *ast.FieldDefinition) *jen.Statement {
 		fieldName = ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Op("*").Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
+	fieldType, ok := TypeMappings[strings.ToLower(fieldName)]
 	if !ok {
 		if field.Type.NonNull {
 			return jen.Qual(getModelPath(), ToPascalCase(fieldName))
@@ -183,7 +184,7 @@ func GetRequestType(field *ast.FieldDefinition) *jen.Statement {
 		fieldName = ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Qual(getModelPath(), ToPascalCase(fieldName))
 	}
-	fieldType, ok := TypeMappings[ToPascalCase(strings.ToLower(fieldName))]
+	fieldType, ok := TypeMappings[strings.ToLower(fieldName)]
 	if !ok {
 		if field.Type.NonNull {
 			return jen.Qual(getModelPath(), ToPascalCase(fieldName))
@@ -205,7 +206,7 @@ func GetRequestTags(operation string, arr []string) map[string]string {
 	return m
 }
 
-func ToSmallPascalCase(s string) string {
+func ToCamelCase(s string) string {
 	if len(s) < 2 {
 		return strings.ToLower(s)
 	}

@@ -2,12 +2,13 @@ package codegen
 
 import (
 	"bytes"
-	"github.com/spf13/viper"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
 	"os"
 	"path"
+
+	"github.com/spf13/viper"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -60,8 +61,7 @@ func createFiles() (*os.File, error) {
 func buildClientCode(c *context.Context) {
 	client := jen.Type().Id("Client").Struct(
 		jen.Id("Client").Add(jen.Op("*").Qual(utils.GqlClientPackageName, "Client")),
-	)
-	client.Line()
+	).Line()
 
 	newClient := jen.Func().Id("NewClient").Params(
 		jen.Id("url").String(),
@@ -69,7 +69,7 @@ func buildClientCode(c *context.Context) {
 	).Op("*").Qual("github.com/hasura/go-graphql-client", "Client").Block(
 		jen.Return(jen.Qual("github.com/hasura/go-graphql-client", "NewClient").Parens(jen.List(jen.Id("url"), jen.Id("httpClient")))),
 	)
-	client.Add(newClient)
+	client.Add(newClient).Line()
 	c.Client.Client = append(c.Client.Client, &context.DataTypeInfo{
 		CodeStatement: client,
 	})

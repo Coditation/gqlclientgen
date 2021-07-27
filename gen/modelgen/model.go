@@ -2,7 +2,6 @@ package modelgen
 
 import (
 	"bytes"
-	"github.com/spf13/viper"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/spf13/viper"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -149,7 +150,7 @@ func createFiles() (*os.File, error) {
 }
 
 func getType(field *ast.FieldDefinition) *jen.Statement {
-	fieldName := utils.ToPascalCase(strings.ToLower(field.Type.NamedType))
+	fieldName := strings.ToLower(field.Type.NamedType)
 	if fieldName == "" {
 		fieldName = utils.ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Op("*").Id(fieldName)
