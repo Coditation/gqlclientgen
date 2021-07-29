@@ -19,6 +19,7 @@ type TypeMapping struct {
 }
 
 var (
+	AllTypes       []string
 	TypeIgnoreList []string = []string{"Query", "Subscription", "Mutation"}
 	TypeMappings            = map[string]TypeMapping{
 		"string":   {MappedType: jen.String()},
@@ -28,9 +29,9 @@ var (
 		"boolean":  {MappedType: jen.Bool()},
 		"any":      {MappedType: jen.Interface()},
 		"map":      {MappedType: jen.Map(jen.String()).Interface()},
-		"date":     {MappedType: jen.Struct(jen.Qual("time", "Time"))},
-		"time":     {MappedType: jen.Struct(jen.Qual("time", "Time"))},
-		"datetime": {MappedType: jen.Struct(jen.Qual("time", "Time"))},
+		"date":     {MappedType: jen.Op("*").Qual("time", "Time")},
+		"time":     {MappedType: jen.Op("*").Qual("time", "Time")},
+		"datetime": {MappedType: jen.Op("*").Qual("time", "Time")},
 	}
 )
 
@@ -196,13 +197,13 @@ func GetRequestType(field *ast.FieldDefinition) *jen.Statement {
 
 func GetRequestTags(operation string, arr []string) map[string]string {
 	m := make(map[string]string)
-	tag := operation
+
 	v := []string{}
 	for _, k := range arr {
 		v = append(v, k+": &"+k)
-		tag = "(" + strings.Join(v, ",") + ")"
 	}
-	m["graphql"] = tag
+	operation = operation + "(" + strings.Join(v, ",") + ")"
+	m["graphql"] = operation
 	return m
 }
 
