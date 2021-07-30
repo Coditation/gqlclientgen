@@ -34,9 +34,9 @@ sourceFilePath: "/somedir/schema.graphqls"
 * [x] Query
 * [x] Mutations
 * [x] Scalars - Map, Any, ID
-* [ ] Support for custom scalars
+* [x] Support for custom scalars
 * [ ] GraphQL directives
-* [ ] GraphQL fragments
+* [x] GraphQL fragments
 * [ ] Subscriptions
 * [ ] Load schema from URL
 
