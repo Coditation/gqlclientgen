@@ -2,7 +2,6 @@ package modelgen
 
 import (
 	"bytes"
-	"github.com/spf13/viper"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/spf13/viper"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -22,6 +23,7 @@ func GenerateModel(parsedGql *ast.Schema) error {
 		return err
 	}
 	defer f.Close()
+	getAllTypes(parsedGql)
 	build(parsedGql, context)
 	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	for _, v := range context.Model.Objects {
@@ -46,7 +48,7 @@ func GenerateModel(parsedGql *ast.Schema) error {
 
 func build(parsedGql *ast.Schema, c *context.Context) error {
 	for _, def := range parsedGql.Types {
-		if def.BuiltIn != true {
+		if !def.BuiltIn {
 			kind := def.Kind
 			switch kind {
 			case ast.Scalar:
@@ -61,6 +63,16 @@ func build(parsedGql *ast.Schema, c *context.Context) error {
 				}
 			case ast.Enum:
 				err := createEnum(def, c)
+				if err != nil {
+					return err
+				}
+			case ast.Interface:
+				err := createInterface(def, c)
+				if err != nil {
+					return err
+				}
+			case ast.Union:
+				err := createUnion(def, c)
 				if err != nil {
 					return err
 				}
@@ -97,6 +109,11 @@ func createObject(def *ast.Definition, c *context.Context) error {
 		fieldType.Tag(map[string]string{"json": utils.GetTags(field)}).Line()
 	}
 	objStruct.Struct(fieldType).Line()
+	if def.Interfaces != nil && len(def.Interfaces) > 0 {
+		for _, v := range def.Interfaces {
+			objStruct.Add(jen.Func().Parens(jen.Id(def.Name)).Id("Is" + v).Call().Block()).Line()
+		}
+	}
 	obj.GraphqlName = def.Name
 	obj.MappedName = strings.ToLower(def.Name)
 	obj.MappedType = strings.ToLower(string(def.Kind))
@@ -149,17 +166,23 @@ func createFiles() (*os.File, error) {
 }
 
 func getType(field *ast.FieldDefinition) *jen.Statement {
-	fieldName := utils.ToPascalCase(strings.ToLower(field.Type.NamedType))
-	if fieldName == "" {
+	fieldName := strings.ToLower(field.Type.NamedType)
+	fieldType, ok := utils.TypeMappings[strings.ToLower(field.Type.Name())]
+	if fieldName == "" && !ok {
 		fieldName = utils.ToPascalCase(field.Type.Elem.Name())
 		return jen.Index().Op("*").Id(fieldName)
 	}
-	fieldType, ok := utils.TypeMappings[fieldName]
 	if !ok {
+		if !utils.StringInSlice(strings.ToLower(field.Type.Name()), utils.AllTypes) {
+			return jen.Op("*").String()
+		}
 		if field.Type.NonNull {
 			return jen.Op("*").Id(utils.ToPascalCase(field.Type.Name()))
 		}
 		return jen.Id(utils.ToPascalCase(field.Type.Name()))
+	}
+	if field.Type.Elem != nil {
+		return jen.Add(checkForIndex(field.Type)).Add(fieldType.MappedType)
 	}
 	return fieldType.MappedType
 }
@@ -201,4 +224,64 @@ func getEnumMethods(s string, arr []string) *jen.Statement {
 
 func getModelPath() string {
 	return path.Join(utils.GetPackagePath(), "model")
+}
+
+func createInterface(def *ast.Definition, c *context.Context) error {
+	if utils.StringInSlice(def.Name, utils.TypeIgnoreList) {
+		return nil
+	}
+
+	var (
+		obj = &context.DataTypeInfo{}
+	)
+	jenType := jen.Type().Id(def.Name).Interface(
+		jen.Id("Is" + def.Name).Call(),
+	).Line()
+	obj.GraphqlName = def.Name
+	obj.MappedName = strings.ToLower(def.Name)
+	obj.MappedType = strings.ToLower(string(def.Kind))
+	obj.CodeStatement = jenType
+	c.Model.Objects = append(c.Model.Objects, obj)
+	return nil
+}
+
+func createUnion(def *ast.Definition, c *context.Context) error {
+	if utils.StringInSlice(def.Name, utils.TypeIgnoreList) {
+		return nil
+	}
+
+	var (
+		obj = &context.DataTypeInfo{}
+	)
+	jenType := jen.Type().Id(def.Name).Interface(
+		jen.Id("Is" + def.Name).Call(),
+	).Line()
+	if def.Types != nil {
+		for _, t := range def.Types {
+			jenType.Add(jen.Func().Parens(jen.Id(t)).Id("Is" + def.Name).Call().Block()).Line()
+		}
+	}
+	obj.GraphqlName = def.Name
+	obj.MappedName = strings.ToLower(def.Name)
+	obj.MappedType = strings.ToLower(string(def.Kind))
+	obj.CodeStatement = jenType
+	c.Model.Objects = append(c.Model.Objects, obj)
+	return nil
+}
+
+func checkForIndex(field *ast.Type) *jen.Statement {
+	index := &jen.Statement{}
+	if field.Elem != nil {
+		index.Add(jen.Index())
+		index.Add(checkForIndex(field.Elem))
+	}
+	return index
+}
+
+func getAllTypes(parsedGql *ast.Schema) {
+	for _, def := range parsedGql.Types {
+		if !def.BuiltIn {
+			utils.AllTypes = append(utils.AllTypes, strings.ToLower(def.Name))
+		}
+	}
 }

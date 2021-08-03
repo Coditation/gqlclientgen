@@ -37,9 +37,9 @@ func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 	qFunc := jen.Func().Params(utils.GetClientParams()).Id(utils.ToPascalCase(d.Name))
 	muArgs.Add(jen.Add(jen.Id("ctx"), jen.Qual("context", "Context")).Op(","))
 	for _, arg := range d.Arguments {
-		muArgs.Add(jen.Id(utils.ToSmallPascalCase(arg.Name)).Add(utils.GetArgsType(arg)).Op(","))
-		varDict[jen.Lit(arg.Name)] = jen.Id(utils.ToSmallPascalCase(arg.Name))
-		tags = append(tags, utils.ToSmallPascalCase(arg.Name))
+		muArgs.Add(jen.Id(utils.ToCamelCase(arg.Name)).Add(utils.GetArgsType(arg)).Op(","))
+		varDict[jen.Lit(arg.Name)] = jen.Id(utils.ToCamelCase(arg.Name))
+		tags = append(tags, utils.ToCamelCase(arg.Name))
 	}
 	qFunc.Parens(muArgs)
 	qFunc.Parens(jen.List(jen.Add(utils.GetReturnType(d)), jen.Error()))
@@ -48,11 +48,11 @@ func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 		returnType.Struct(
 			jen.Id(utils.ToPascalCase(d.Name)).Struct(
 				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)),
-			).Tag(utils.GetRequestTags(utils.ToSmallPascalCase(d.Name), tags)),
+			).Tag(utils.GetRequestTags(utils.ToCamelCase(d.Name), tags)),
 		)
 	} else {
 		returnType.Struct(
-			jen.Id(utils.ToPascalCase(d.Name)).Interface().Tag(utils.GetRequestTags(utils.ToSmallPascalCase(d.Name), tags)),
+			jen.Id(utils.ToPascalCase(d.Name)).Interface().Tag(utils.GetRequestTags(utils.ToCamelCase(d.Name), tags)),
 		)
 	}
 	variables := jen.Id("variables").Op(":=").Map(jen.String()).Interface()

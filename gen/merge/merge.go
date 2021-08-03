@@ -15,13 +15,14 @@ func Generate() error {
 		logger.LogError("failed to load data ", err)
 		return err
 	}
-	if genErr := codegen.GenerateClientCode(s); genErr != nil {
-		logger.LogError("failed to generate client code ", genErr)
-		return genErr
-	}
 	if genErr := modelgen.GenerateModel(s); genErr != nil {
 		logger.LogError("failed to generate model code ", genErr)
 		return genErr
 	}
+	if genErr := codegen.GenerateClientCode(s); genErr != nil {
+		logger.LogError("failed to generate client code ", genErr)
+		return genErr
+	}
+
 	return nil
 }

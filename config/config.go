@@ -2,9 +2,15 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 
+	"github.com/Coditation/skael-connectors-shared/logger"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
+
+var GqlConfig GqlClientGenConfig
 
 const (
 	ConfigName              = "config"
@@ -25,6 +31,7 @@ type GqlClientGenConfig struct {
 	SourceType           string
 	GraphQLServerBaseUrl string
 	SourceFilePath       string
+	Maps                 map[string]interface{}
 }
 
 func LoadConfig(configFile string) error {
@@ -34,7 +41,14 @@ func LoadConfig(configFile string) error {
 	v.AddConfigPath(configFile)
 	err := v.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %w \n", err))
+		logger.LogPanic(fmt.Errorf("Fatal error config file: %w \n", err))
+	}
+	byteData, err := ioutil.ReadFile(path.Join(configFile, ConfigName+"."+ConfigType))
+	if err != nil {
+		return err
+	}
+	if err := yaml.Unmarshal(byteData, &GqlConfig); err != nil {
+		return err
 	}
 	return nil
 }
