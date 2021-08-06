@@ -29,10 +29,9 @@ func buildMutation(def *ast.Schema, c *context.Context) error {
 
 func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 	var (
-		muArgs     = &jen.Statement{}
-		varDict    = jen.Dict{}
-		tags       []string
-		returnType = &jen.Statement{}
+		muArgs  = &jen.Statement{}
+		varDict = jen.Dict{}
+		tags    []string
 	)
 	qFunc := jen.Func().Params(utils.GetClientParams()).Id(utils.ToPascalCase(d.Name))
 	muArgs.Add(jen.Add(jen.Id("ctx"), jen.Qual("context", "Context")).Op(","))
@@ -43,11 +42,11 @@ func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 	}
 	qFunc.Parens(muArgs)
 	qFunc.Parens(jen.List(jen.Add(utils.GetReturnType(d)), jen.Error()))
-	returnType.Var().Id("mutate")
+	returnType := jen.Var().Id("mutate")
 	if strings.ToLower(d.Type.Name()) != "any" {
 		returnType.Struct(
 			jen.Id(utils.ToPascalCase(d.Name)).Struct(
-				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)),
+				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)).Tag(map[string]string{"json": utils.GetTags(d), "graphql": utils.GetTags(d)}),
 			).Tag(utils.GetRequestTags(utils.ToCamelCase(d.Name), tags)),
 		)
 	} else {

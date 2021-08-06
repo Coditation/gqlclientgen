@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
+	"gqlclientgen/gen/queryparser"
 	"gqlclientgen/gen/utils"
 	"os"
 	"path"
@@ -21,9 +22,17 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 		return err
 	}
 	defer f.Close()
+	queryDocument, err := queryparser.ParseQueryDocuments("query", parsedGql)
+	if err != nil {
+		return err
+	}
+	queries, err := queryparser.QueryDocumentsByOperations(parsedGql, queryDocument.Operations)
+	if err != nil {
+		return err
+	}
 	buildClientCode(context)
 	buildMutation(parsedGql, context)
-	buildQuery(parsedGql, context)
+	buildQuery(parsedGql, queries, context)
 	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	jenFile.ImportAlias(utils.GqlClientPackageName, "graphql")
 	for _, v := range context.Client.Client {
