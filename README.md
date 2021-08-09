@@ -13,7 +13,7 @@ go build gqlclientgen
 
 ### Run
 ```bash
-gqlclientgen -config_path=<path of the directory containing the config.yaml>
+gqlclientgen -config_path=<path of the directory containing the config.yaml> -plugin_path=<path of the directory where all the plugin of custom scalars> -query_path=<path of the all operations with fragments>
 ```
 
 ### Config (YAML)
