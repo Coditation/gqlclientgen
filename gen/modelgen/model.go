@@ -170,6 +170,9 @@ func getType(field *ast.FieldDefinition) *jen.Statement {
 	fieldType, ok := utils.TypeMappings[strings.ToLower(field.Type.Name())]
 	if fieldName == "" && !ok {
 		fieldName = utils.ToPascalCase(field.Type.Elem.Name())
+		if field.Type.NonNull {
+			return jen.Index().Id(fieldName)
+		}
 		return jen.Index().Op("*").Id(fieldName)
 	}
 	if !ok {
@@ -183,6 +186,9 @@ func getType(field *ast.FieldDefinition) *jen.Statement {
 	}
 	if field.Type.Elem != nil {
 		return jen.Add(checkForIndex(field.Type)).Add(fieldType.MappedType)
+	}
+	if !field.Type.NonNull {
+		return jen.Op("*").Add(fieldType.MappedType)
 	}
 	return fieldType.MappedType
 }

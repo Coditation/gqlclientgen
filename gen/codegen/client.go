@@ -4,14 +4,21 @@ import (
 	"bytes"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
+	"gqlclientgen/gen/queryparser"
 	"gqlclientgen/gen/utils"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/spf13/viper"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/vektah/gqlparser/v2/ast"
+)
+
+var (
+	QueryPath string
+	queries   []*ast.QueryDocument
 )
 
 func GenerateClientCode(parsedGql *ast.Schema) error {
@@ -21,9 +28,19 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 		return err
 	}
 	defer f.Close()
+	if QueryPath != "" && strings.TrimSpace(QueryPath) != "" {
+		queryDocument, err := queryparser.ParseQueryDocuments(QueryPath, parsedGql)
+		if err != nil {
+			return err
+		}
+		queries, err = queryparser.QueryDocumentsByOperations(parsedGql, queryDocument.Operations)
+		if err != nil {
+			return err
+		}
+	}
 	buildClientCode(context)
 	buildMutation(parsedGql, context)
-	buildQuery(parsedGql, context)
+	buildQuery(parsedGql, queries, context)
 	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	jenFile.ImportAlias(utils.GqlClientPackageName, "graphql")
 	for _, v := range context.Client.Client {
