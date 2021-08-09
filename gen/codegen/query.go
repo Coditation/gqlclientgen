@@ -1,7 +1,6 @@
 package codegen
 
 import (
-	"fmt"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/utils"
 	"strings"
@@ -14,7 +13,6 @@ import (
 func buildQuery(def *ast.Schema, queryDoc []*ast.QueryDocument, c *context.Context) error {
 	queries := def.Query
 	var so sync.Once
-	// q.Add(createOperationWithFragments(def, queryDoc))
 	for _, query := range queries.Fields {
 		q := &jen.Statement{}
 		so.Do(func() {
@@ -53,7 +51,7 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 	if strings.ToLower(d.Type.Name()) != "any" {
 		returnType.Struct(
 			jen.Id(utils.ToPascalCase(d.Name)).Struct(
-				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)).Tag(map[string]string{"json": utils.GetTags(d), "graphql": utils.GetTags(d)}),
+				jen.Id(d.Type.Name()).Add(utils.GetRequestType(d)).Tag(map[string]string{"json": getStructTags(d), "graphql": getStructTags(d)}),
 			).Tag(utils.GetRequestTags(utils.ToCamelCase(d.Name), tags)),
 		)
 	} else {
@@ -94,29 +92,41 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 	return qFunc.Line()
 }
 
+func getStructTags(d *ast.FieldDefinition) string {
+	name := utils.ToCamelCase(d.Type.Name())
+	if !d.Type.NonNull {
+		return name + ",omitempty"
+	}
+	if d.Type.Elem != nil {
+		return name + ",omitempty"
+	}
+	return name
+}
+
 func createOperationWithFragments(schema *ast.Schema, queryDoc []*ast.QueryDocument) *jen.Statement {
 	var (
 		op          = &jen.Statement{}
 		uniqueFrags = make(map[string]*ast.FragmentDefinition)
 		fragsList   ast.FragmentDefinitionList
 	)
-	fmt.Println("queryDoc: ", len(queryDoc))
-	for _, d := range queryDoc {
-		if d.Fragments != nil && fragsList == nil {
-			for _, f := range d.Fragments {
-				_, ok := uniqueFrags[f.Name]
-				if !ok {
-					uniqueFrags[f.Name] = f
+	if queryDoc != nil {
+		for _, d := range queryDoc {
+			if d.Fragments != nil && fragsList == nil {
+				for _, f := range d.Fragments {
+					_, ok := uniqueFrags[f.Name]
+					if !ok {
+						uniqueFrags[f.Name] = f
+					}
 				}
+				for _, f := range uniqueFrags {
+					fragsList = append(fragsList, f)
+				}
+				op.Add(createFrags(fragsList)).Line()
 			}
-			for _, f := range uniqueFrags {
-				fragsList = append(fragsList, f)
-			}
-			op.Add(createFrags(fragsList)).Line()
-		}
-		if d.Operations != nil && len(d.Operations) > 0 {
-			for _, operation := range d.Operations {
-				op.Add(createOperations(operation))
+			if d.Operations != nil && len(d.Operations) > 0 {
+				for _, operation := range d.Operations {
+					op.Add(createOperations(operation))
+				}
 			}
 		}
 	}
@@ -138,7 +148,6 @@ func createOperations(op *ast.OperationDefinition) *jen.Statement {
 	var (
 		queryArgs = &jen.Statement{}
 		varDict   = jen.Dict{}
-		tags      []string
 	)
 	qFunc := getOpFragStruct(op)
 	qFunc.Add(jen.Func().Params(utils.GetClientParams()).Id(utils.ToPascalCase(op.Name)))
@@ -146,15 +155,15 @@ func createOperations(op *ast.OperationDefinition) *jen.Statement {
 	for _, arg := range op.VariableDefinitions {
 		queryArgs.Add(jen.Id(utils.ToCamelCase(arg.Variable)).Add(getOperationsArgsType(arg)).Op(","))
 		varDict[jen.Lit(arg.Variable)] = jen.Id(utils.ToCamelCase(arg.Variable))
-		tags = append(tags, utils.ToCamelCase(arg.Variable))
 	}
 	qFunc.Parens(queryArgs)
 	qFunc.Parens(jen.List(jen.Op("*").Id(op.Name), jen.Error()))
 	variables := jen.Id("variables").Op(":=").Map(jen.String()).Interface()
+	returnType := jen.Var().Id("res").Struct(jen.Id(op.Name).Id(op.Name).Tag(getOpRespTags(op)))
 	qFunc.Block(
 		variables.Values(varDict).Line(),
-		jen.Var().Id("res").Id(op.Name),
-		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot("QueryRaw").Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
+		returnType,
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot(utils.ToPascalCase(string(op.Operation))+"Raw").Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
 		jen.If(
 			jen.Err().Op("!=").Nil(),
 		).Block(
@@ -163,7 +172,7 @@ func createOperations(op *ast.OperationDefinition) *jen.Statement {
 		jen.If(
 			jen.Id("resp").Op("!=").Nil(),
 		).Block(
-			jen.Return(jen.Op("&").Id("res"), jen.Nil()),
+			jen.Return(jen.Op("&").Id("res").Dot(op.Name), jen.Nil()),
 		),
 		jen.Return(jen.Nil(), jen.Nil()),
 	)
@@ -274,4 +283,24 @@ func getOpFragStruct(op *ast.OperationDefinition) *jen.Statement {
 	}
 	opStruct.Struct(fields)
 	return opStruct.Line()
+}
+
+func getOpRespTags(op *ast.OperationDefinition) map[string]string {
+	m := make(map[string]string)
+	tags := []string{}
+	operation := op.Name
+	if op.VariableDefinitions != nil {
+		for _, v := range op.VariableDefinitions {
+			if v.DefaultValue != nil {
+				tags = append(tags, v.Variable+`:\"`+v.DefaultValue.Raw+`\"`)
+			} else {
+				tags = append(tags, v.Variable+`:&`+v.DefaultValue.Raw)
+			}
+		}
+		if len(tags) > 0 {
+			operation = operation + "(" + strings.Join(tags, ",") + ")"
+		}
+	}
+	m["graphql"] = operation
+	return m
 }

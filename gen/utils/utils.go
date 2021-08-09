@@ -201,7 +201,9 @@ func GetRequestTags(operation string, arr []string) map[string]string {
 	for _, k := range arr {
 		v = append(v, k+":&"+k)
 	}
-	operation = operation + "(" + strings.Join(v, ",") + ")"
+	if len(v) > 0 {
+		operation = operation + "(" + strings.Join(v, ",") + ")"
+	}
 	m["graphql"] = operation
 	m["json"] = operation
 	return m
