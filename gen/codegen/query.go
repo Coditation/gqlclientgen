@@ -294,7 +294,7 @@ func getOpRespTags(op *ast.OperationDefinition) map[string]string {
 			if v.DefaultValue != nil {
 				tags = append(tags, v.Variable+`:\"`+v.DefaultValue.Raw+`\"`)
 			} else {
-				tags = append(tags, v.Variable+`:&`+v.DefaultValue.Raw)
+				tags = append(tags, v.Variable+`:&`+v.Variable)
 			}
 		}
 		if len(tags) > 0 {
