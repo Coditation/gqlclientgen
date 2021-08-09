@@ -58,7 +58,7 @@ sourceFilePath: "/somedir/schema.graphqls"
 - [ ] GraphQL directives
 - [x] GraphQL fragments
 - [ ] Subscriptions
-- [ ] Load schema from URL
+- [x] Load schema from URL
 
 ## License
 
