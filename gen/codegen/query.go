@@ -63,7 +63,7 @@ func createQueryFunc(d *ast.FieldDefinition) *jen.Statement {
 	qFunc.Block(
 		returnType,
 		variables.Values(varDict).Line(),
-		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot("QueryRaw").Params(jen.List(jen.Id("ctx"), jen.Id("&query"), jen.Id("variables"))),
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("client").Dot("QueryRaw").Params(jen.List(jen.Id("ctx"), jen.Id("&query"), jen.Id("variables"))),
 		jen.If(
 			jen.Err().Op("!=").Nil(),
 		).Block(
@@ -163,7 +163,7 @@ func createOperations(op *ast.OperationDefinition) *jen.Statement {
 	qFunc.Block(
 		variables.Values(varDict).Line(),
 		returnType,
-		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot(utils.ToPascalCase(string(op.Operation))+"Raw").Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("client").Dot(utils.ToPascalCase(string(op.Operation))+"Raw").Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
 		jen.If(
 			jen.Err().Op("!=").Nil(),
 		).Block(
@@ -210,7 +210,7 @@ func createStructFields(f ast.Selection) *jen.Statement {
 			if fieldType.Definition.Type.Elem != nil {
 				field.Add(jen.Index().Op("*"))
 			}
-			field.Struct(fields)
+			field.Struct(fields).Tag(map[string]string{"graphql": fieldType.Definition.Name, "json": fieldType.Definition.Name})
 			return field
 		}
 		field.Add(fragmentFieldType(fieldType.Definition.Type.NamedType, fieldType.Definition.Type)).Tag(map[string]string{"graphql": fieldType.Definition.Name, "json": fieldType.Definition.Name}).Line()

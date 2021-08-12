@@ -15,7 +15,7 @@ func buildMutation(def *ast.Schema, c *context.Context) error {
 		if mutate.Position != nil {
 			q := &jen.Statement{}
 			q.Add(createMutationFunc(mutate))
-			c.Model.Queries = append(c.Model.Queries, &context.DataTypeInfo{
+			c.Model.Mutations = append(c.Model.Mutations, &context.DataTypeInfo{
 				GraphqlName:   mutation.Name,
 				MappedName:    strings.ToLower(mutation.Name),
 				MappedType:    strings.ToLower(string(mutation.Kind)),
@@ -58,7 +58,7 @@ func createMutationFunc(d *ast.FieldDefinition) *jen.Statement {
 	qFunc.Block(
 		returnType,
 		variables.Values(varDict).Line(),
-		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("Client").Dot("QueryRaw").Params(jen.List(jen.Id("ctx"), jen.Id("&mutate"), jen.Id("variables"))),
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("client").Dot("MutateRaw").Params(jen.List(jen.Id("ctx"), jen.Id("&mutate"), jen.Id("variables"))),
 		jen.If(
 			jen.Err().Op("!=").Nil(),
 		).Block(

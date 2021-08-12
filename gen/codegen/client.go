@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"bytes"
+	"fmt"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/queryparser"
@@ -41,15 +42,20 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 	buildClientCode(context)
 	buildMutation(parsedGql, context)
 	buildQuery(parsedGql, queries, context)
+	buildSubscription(parsedGql, context)
 	jenFile := jen.NewFile(viper.GetViper().GetString(config.PackageNameKey))
 	jenFile.ImportAlias(utils.GqlClientPackageName, "graphql")
 	for _, v := range context.Client.Client {
 		jenFile.Add(v.CodeStatement)
 	}
+	fmt.Printf("%#v\n", jenFile)
 	for _, v := range context.Model.Queries {
 		jenFile.Add(v.CodeStatement)
 	}
 	for _, v := range context.Model.Mutations {
+		jenFile.Add(v.CodeStatement)
+	}
+	for _, v := range context.Model.Subscriptions {
 		jenFile.Add(v.CodeStatement)
 	}
 	buf := &bytes.Buffer{}
@@ -77,14 +83,16 @@ func createFiles() (*os.File, error) {
 
 func buildClientCode(c *context.Context) {
 	client := jen.Type().Id("Client").Struct(
-		jen.Id("Client").Add(jen.Op("*").Qual(utils.GqlClientPackageName, "Client")),
+		jen.Id("client").Add(jen.Op("*").Qual(utils.GqlClientPackageName, "Client")),
 	).Line()
 
 	newClient := jen.Func().Id("NewClient").Params(
 		jen.Id("url").String(),
 		jen.Id("httpClient").Op("*").Qual("net/http", "Client"),
-	).Op("*").Qual("github.com/hasura/go-graphql-client", "Client").Block(
-		jen.Return(jen.Qual("github.com/hasura/go-graphql-client", "NewClient").Parens(jen.List(jen.Id("url"), jen.Id("httpClient")))),
+	).Op("*").Id("Client").Block(
+		jen.Return(jen.Op("&").Id("Client").Block(
+			jen.Id("client").Op(":").Qual("github.com/hasura/go-graphql-client", "NewClient").Params(jen.List(jen.Id("url"), jen.Id("httpClient"))).Op(","),
+		)),
 	)
 	client.Add(newClient).Line()
 	c.Client.Client = append(c.Client.Client, &context.DataTypeInfo{

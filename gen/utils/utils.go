@@ -166,7 +166,6 @@ func GetVarType(field *ast.FieldDefinition) *jen.Statement {
 func GetReturnFuncType(field *ast.FieldDefinition) *jen.Statement {
 	fieldName := ToPascalCase(field.Type.NamedType)
 	if fieldName == "" {
-
 		return jen.Id("res")
 	}
 	return jen.Op("&").Id("res")
