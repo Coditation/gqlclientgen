@@ -14,12 +14,13 @@ type DataTypeInfo struct {
 }
 
 type ModelInfo struct {
-	PackageName string
-	Queries     []*DataTypeInfo
-	Mutations   []*DataTypeInfo
-	Objects     []*DataTypeInfo
-	Enums       []*DataTypeInfo
-	Scalars     []*DataTypeInfo
+	PackageName   string
+	Queries       []*DataTypeInfo
+	Mutations     []*DataTypeInfo
+	Subscriptions []*DataTypeInfo
+	Objects       []*DataTypeInfo
+	Enums         []*DataTypeInfo
+	Scalars       []*DataTypeInfo
 }
 
 type ClientInfo struct {
@@ -42,6 +43,7 @@ func Create() *Context {
 		context.Model.Mutations = make([]*DataTypeInfo, 0)
 		context.Model.Enums = make([]*DataTypeInfo, 0)
 		context.Model.Objects = make([]*DataTypeInfo, 0)
+		context.Model.Subscriptions = make([]*DataTypeInfo, 0)
 		context.Client.Client = make([]*DataTypeInfo, 0)
 	})
 	return context
