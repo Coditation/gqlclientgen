@@ -163,7 +163,7 @@ func createOperations(op *ast.OperationDefinition) *jen.Statement {
 	qFunc.Block(
 		variables.Values(varDict).Line(),
 		returnType,
-		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("client").Dot(utils.ToPascalCase(string(op.Operation))+"Raw").Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
+		jen.List(jen.Id("resp"), jen.Err()).Op(":=").Id("c").Dot("client").Dot(clientMethodName(string(op.Operation))).Params(jen.List(jen.Id("ctx"), jen.Op("&").Id("res"), jen.Id("variables"))),
 		jen.If(
 			jen.Err().Op("!=").Nil(),
 		).Block(
@@ -278,9 +278,18 @@ func getOpFragStruct(op *ast.OperationDefinition) *jen.Statement {
 	fields := &jen.Statement{}
 	for _, field := range op.SelectionSet {
 		fieldType := field.(*ast.Field)
-		f := fieldType.SelectionSet[0].(*ast.FragmentSpread).Name
+		var f string
+		switch fType := fieldType.SelectionSet[0].(type) {
+		case *ast.FragmentSpread:
+			f = fType.Name
+		case *ast.Field:
+			f = fType.Name
+		case *ast.InlineFragment:
+			f = fType.ObjectDefinition.Name
+		}
 		fields.Id(utils.ToPascalCase(fieldType.Alias)).Op("*").Id(utils.ToPascalCase(f)).Tag(map[string]string{"json": utils.ToCamelCase(fieldType.Alias), "graphql": utils.ToCamelCase(fieldType.Alias)}).Line()
 	}
+
 	opStruct.Struct(fields)
 	return opStruct.Line()
 }
@@ -303,4 +312,16 @@ func getOpRespTags(op *ast.OperationDefinition) map[string]string {
 	}
 	m["graphql"] = operation
 	return m
+}
+
+func clientMethodName(op string) string {
+	switch op {
+	case "query":
+		return "QueryRaw"
+	case "mutation":
+		return "MutateRaw"
+	case "subscribe":
+		return "Subscribe"
+	}
+	return ""
 }

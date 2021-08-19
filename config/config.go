@@ -23,6 +23,8 @@ const (
 	FileSourceType          = "file"
 	UrlSourceType           = "remote"
 	RemoteURL               = "url"
+	QueryPath               = "queryPath"
+	PluginPath              = "pluginPath"
 )
 
 type GqlClientGenConfig struct {
@@ -31,7 +33,8 @@ type GqlClientGenConfig struct {
 	SourceType           string
 	GraphQLServerBaseUrl string
 	SourceFilePath       string
-	Maps                 map[string]interface{}
+	QueryPath            string
+	PluginPath           string
 }
 
 func LoadConfig(configFile string) error {

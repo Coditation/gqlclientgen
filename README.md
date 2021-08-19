@@ -15,7 +15,7 @@ go build gqlclientgen
 ### Run
 
 ```bash
-gqlclientgen -config_path=<path of the directory containing the config.yaml> -plugin_path=<path of the directory where all the plugin of custom scalars> -query_path=<path of the all operations with fragments>
+gqlclientgen -config_path=<path of the directory containing the config.yaml> 
 ```
 
 ### Create Custom Scalar Plugin
@@ -50,6 +50,9 @@ sourceType: "file"
 sourceFilePath: "/somedir/schema.graphqls"
 # URL of the graphql server with the introspection context
 url: "gql"
+# Path for external operations with fragments
+queryPath: ""
+#
 ```
 
 ## Features

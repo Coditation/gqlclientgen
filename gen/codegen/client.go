@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"bytes"
-	"fmt"
 	"gqlclientgen/config"
 	"gqlclientgen/gen/context"
 	"gqlclientgen/gen/queryparser"
@@ -18,8 +17,7 @@ import (
 )
 
 var (
-	QueryPath string
-	queries   []*ast.QueryDocument
+	queries []*ast.QueryDocument
 )
 
 func GenerateClientCode(parsedGql *ast.Schema) error {
@@ -29,8 +27,9 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 		return err
 	}
 	defer f.Close()
-	if QueryPath != "" && strings.TrimSpace(QueryPath) != "" {
-		queryDocument, err := queryparser.ParseQueryDocuments(QueryPath, parsedGql)
+	queryPath := viper.GetViper().GetString(config.QueryPath)
+	if queryPath != "" && strings.TrimSpace(queryPath) != "" {
+		queryDocument, err := queryparser.ParseQueryDocuments(queryPath, parsedGql)
 		if err != nil {
 			return err
 		}
@@ -48,7 +47,6 @@ func GenerateClientCode(parsedGql *ast.Schema) error {
 	for _, v := range context.Client.Client {
 		jenFile.Add(v.CodeStatement)
 	}
-	fmt.Printf("%#v\n", jenFile)
 	for _, v := range context.Model.Queries {
 		jenFile.Add(v.CodeStatement)
 	}
