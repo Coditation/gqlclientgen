@@ -63,7 +63,3 @@ url: "gql"
 - [x] GraphQL fragments
 - [ ] Subscriptions
 - [x] Load schema from URL
-
-## License
-
-This software is licensed under [AGPL v3.0](https://choosealicense.com/licenses/agpl-3.0/)
